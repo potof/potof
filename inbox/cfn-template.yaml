@@ -6,10 +6,6 @@ Parameters:
     Description: The EC2 Key Pair to allow SSH access to the instance
     Type: "AWS::EC2::KeyPair::KeyName"
 
-  MyIP:
-    Description: IP address allowed to access EC2
-    Type: String
-
   MyName:
     Description: Your name (ex. hosodakz)
     Type: String
@@ -66,7 +62,7 @@ Resources:
         - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
-          CidrIp: !Ref MyIP
+          CidrIp: 0.0.0.0/0
 
   EC2:
     Type: AWS::EC2::Instance
