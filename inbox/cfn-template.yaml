@@ -1,0 +1,88 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Provision EC2
+
+Parameters:
+  KeyName:
+    Description: The EC2 Key Pair to allow SSH access to the instance
+    Type: "AWS::EC2::KeyPair::KeyName"
+
+  MyIP:
+    Description: IP address allowed to access EC2
+    Type: String
+
+  MyName:
+    Description: Your name (ex. hosodakz)
+    Type: String
+
+Resources:
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      Tags:
+        - Key: Name
+          Value: !Sub ${MyName}-vpc
+
+  PriSub:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: ap-northeast-1a
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.1.0/24
+      Tags:
+        - Key: Name
+          Value: !Sub ${MyName}-private-sub-a-cf
+
+  PriSubRT:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${MyName}-private-sub-a-rt-cf
+
+  # # PriSub-インターネット間のルーティング
+  # PriSubToInternet:
+  #   Type: AWS::EC2::Route
+  #   Properties:
+  #     RouteTableId: !Ref PriSubRT
+  #     DestinationCidrBlock: 0.0.0.0/0
+  #     GatewayId: !Ref IGW
+
+  # # ルートテーブルをサブネットに関連付け
+  # AssoPriSubRT:
+  #   Type: AWS::EC2::SubnetRouteTableAssociation
+  #   Properties:
+  #     SubnetId: !Ref PriSub
+  #     RouteTableId: !Ref PriSubRT
+
+  EC2SG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub ${MyName}-ec2-sg-cf
+      GroupDescription: Allow SSH
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: !Ref MyIP
+
+  EC2:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-0b7546e839d7ace12
+      KeyName: !Ref KeyName
+      InstanceType: t2.micro
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: "true"
+          DeviceIndex: "0"
+          SubnetId: !Ref PriSub
+          GroupSet:
+            - !Ref EC2SG
+      # UserData: !Base64 |
+      #   #!/bin/bash
+      #   sudo yum install -y git
+      Tags:
+        - Key: Name
+          Value: !Sub ${MyName}-ec2-a-cf
